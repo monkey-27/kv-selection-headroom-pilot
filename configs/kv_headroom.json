@@ -1,0 +1,74 @@
+{
+  "protocol_version": "kv-selection-headroom-v1",
+  "seed": 20260906,
+  "model": "Qwen/Qwen3-4B",
+  "model_revision": "main",
+  "dtype": "bfloat16",
+  "attention_backend": "sdpa",
+  "datasets": {
+    "math500": {
+      "path": "data/math/test.jsonl",
+      "target_traces": 24,
+      "max_candidates": 500
+    },
+    "gpqa_diamond": {
+      "path": "data/gpqa/test.jsonl",
+      "target_traces": 24,
+      "max_candidates": 198
+    }
+  },
+  "generation": {
+    "max_new_tokens": 4096,
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "do_sample": true
+  },
+  "main": {
+    "checkpoint_reasoning_token": 896,
+    "target_tokens": 64,
+    "recent_tokens": 128,
+    "n_blocks": 12,
+    "block_tokens": 64,
+    "subset_batch_size": 32,
+    "primary_k": 2
+  },
+  "synthetic": {
+    "n_examples": 16,
+    "retrieval_threshold": 0.90,
+    "large_headroom_nats": 0.08
+  },
+  "late_stress": {
+    "n_traces": 16,
+    "checkpoint_fraction": 0.75,
+    "recent_tokens": 128,
+    "n_blocks": 8,
+    "target_tokens": 64,
+    "subset_batch_size": 32
+  },
+  "free_generation": {
+    "n_traces": 24,
+    "max_new_tokens": 4096,
+    "random_replicates": 1,
+    "substantial_median_h2": 0.08,
+    "substantial_rr2": 0.75,
+    "disappears_accuracy_delta": 0.05
+  },
+  "verdict": {
+    "memory_active_delta_nats": 0.05,
+    "strong_go_a_median_h2": 0.03,
+    "strong_go_a_rr2": 0.90,
+    "strong_go_a_upper_ci_mean_h2": 0.05,
+    "minimum_memory_active_traces": 12,
+    "heuristic_little_fraction": 0.25,
+    "heuristic_most_fraction": 0.75,
+    "bootstrap_samples": 10000
+  },
+  "runtime": {
+    "max_h100_equivalent_hours": 10.0,
+    "stop_margin_hours": 0.25,
+    "gpu_h100_equivalent_factor": 1.0
+  },
+  "paths": {
+    "run_dir": "runs/kv_headroom_v1"
+  }
+}

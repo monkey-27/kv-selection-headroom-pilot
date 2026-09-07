@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kv-selection-headroom"
+version = "0.1.0"
+description = "Exhaustive causal KV block-selection pilot on Qwen3 reasoning traces"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+include = ["kvheadroom*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests_headroom"]

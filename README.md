@@ -1,5 +1,9 @@
 # Random Attention: Rethinking KV Cache Eviction for Efficient Reasoning
 
+> This checkout also contains the frozen
+> [KV-selection-headroom pilot](PROTOCOL.md), an exhaustive Qwen3-4B replay
+> study of causal block-selection headroom beyond random retention.
+
 Code for the paper [*Random Attention: Rethinking KV Cache Eviction for Efficient Reasoning*](https://arxiv.org/abs/2609.03430) (arXiv:2609.03430).
 
 📄 [Paper (arXiv:2609.03430)](https://arxiv.org/abs/2609.03430) · 🌐 [Project page](https://arthur-heng.github.io/Random-Attention-page/) · 🧵 [Thread](https://x.com/HengWang_uiuc/status/2095685764302475563)

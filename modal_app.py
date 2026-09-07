@@ -146,6 +146,21 @@ def _benchmark(gpu: str) -> dict:
     return result
 
 
+@app.function(timeout=600, **common)
+def validate_remote():
+    from transformers import AutoTokenizer
+    import kvheadroom.traces  # installs the legacy Utils import root
+    from kvcompress.harness.Utils.grader import check_is_correct
+    from kvcompress.harness.Utils.parser import parse_question
+    from kvheadroom.synthetic import build_examples
+
+    del check_is_correct, parse_question
+    cfg = json.loads(Path("/root/configs/kv_headroom.json").read_text())
+    tokenizer = AutoTokenizer.from_pretrained(cfg["model"], revision=cfg["model_revision"])
+    examples = build_examples(tokenizer, cfg["synthetic"]["n_examples"])
+    return {"upstream_imports": True, "synthetic_examples": len(examples)}
+
+
 def _run_full(gpu: str) -> dict:
     from kvheadroom.analyze import analyze
     from kvheadroom.exhaustive import run as exhaustive

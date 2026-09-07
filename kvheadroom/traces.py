@@ -4,6 +4,7 @@ import argparse
 import json
 import random
 import re
+import sys
 from pathlib import Path
 
 import torch
@@ -11,6 +12,14 @@ import torch
 from .config import ROOT, freeze_config, load_config
 from .io import append_jsonl, read_jsonl
 from .runtime import GPUHourBudget
+
+
+# Random Attention's copied VaSE parser uses the historical absolute import
+# ``from Utils import *``. Make that package root explicit regardless of cwd or
+# container PYTHONPATH handling.
+_RANDOM_ATTENTION_HARNESS = Path(__file__).resolve().parents[1] / "kvcompress" / "harness"
+if str(_RANDOM_ATTENTION_HARNESS) not in sys.path:
+    sys.path.insert(0, str(_RANDOM_ATTENTION_HARNESS))
 
 
 def _resolve(path: str) -> Path:

@@ -68,3 +68,8 @@ bash scripts/run_headroom.sh
 Artifacts land in `runs/kv_headroom_v1/`: frozen config, selected traces,
 per-subset JSONL, per-trace/budget CSV, aggregate JSON, conditional-generation
 rows, three plots, runtime ledger, and `VERDICT.md`.
+
+For Modal, `modal_app.py` provides matched A100-40GB and H100 throughput probes
+plus full-run entrypoints. Remote artifacts are committed batch-by-batch to
+`kv-headroom-output`; model/data downloads are cached in
+`kv-headroom-hf-cache`.

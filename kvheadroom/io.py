@@ -6,6 +6,21 @@ from pathlib import Path
 from typing import Iterable
 
 
+_MODAL_VOLUME = None
+
+
+def commit_remote_volume() -> None:
+    """Commit the mounted Modal output volume when running remotely."""
+    global _MODAL_VOLUME
+    name = os.environ.get("KVH_MODAL_VOLUME_NAME")
+    if not name:
+        return
+    if _MODAL_VOLUME is None:
+        import modal
+        _MODAL_VOLUME = modal.Volume.from_name(name)
+    _MODAL_VOLUME.commit()
+
+
 def read_jsonl(path: str | Path) -> list[dict]:
     path = Path(path)
     if not path.exists():
@@ -21,6 +36,7 @@ def append_jsonl(path: str | Path, rows: Iterable[dict]) -> None:
             handle.write(json.dumps(row, sort_keys=True) + "\n")
         handle.flush()
         os.fsync(handle.fileno())
+    commit_remote_volume()
 
 
 def atomic_json(path: str | Path, value) -> None:
@@ -29,3 +45,4 @@ def atomic_json(path: str | Path, value) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
     tmp.replace(path)
+    commit_remote_volume()

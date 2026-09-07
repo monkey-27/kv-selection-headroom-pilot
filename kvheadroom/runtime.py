@@ -5,6 +5,8 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
+from .io import commit_remote_volume
+
 
 class GPUHourBudget:
     """Persistent active-compute ledger; idle time between resumes is excluded."""
@@ -43,6 +45,7 @@ class GPUHourBudget:
         self.data["h100_equivalent_hours"] = self.used_hours
         self.data["cap_hours"] = self.cap
         self.path.write_text(json.dumps(self.data, indent=2) + "\n")
+        commit_remote_volume()
 
     @contextmanager
     def active(self, label: str):
@@ -58,3 +61,4 @@ class GPUHourBudget:
             self.data["h100_equivalent_hours"] = self.used_hours
             self.data["cap_hours"] = self.cap
             self.path.write_text(json.dumps(self.data, indent=2) + "\n")
+            commit_remote_volume()

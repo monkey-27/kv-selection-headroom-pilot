@@ -30,7 +30,7 @@ def read_jsonl(path: str | Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().split("\n") if line.strip()]
 
 
-def append_jsonl(path: str | Path, rows: Iterable[dict]) -> None:
+def append_jsonl(path: str | Path, rows: Iterable[dict], *, commit: bool = True) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a") as handle:
@@ -38,7 +38,8 @@ def append_jsonl(path: str | Path, rows: Iterable[dict]) -> None:
             handle.write(json.dumps(row, sort_keys=True) + "\n")
         handle.flush()
         os.fsync(handle.fileno())
-    commit_remote_volume()
+    if commit:
+        commit_remote_volume()
 
 
 def atomic_json(path: str | Path, value) -> None:

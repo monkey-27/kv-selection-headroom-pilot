@@ -68,8 +68,12 @@ def score_trace(scorer: QwenReplayScorer, trace: dict, cfg: dict, stage: str,
             scored = scorer.score_masks(prefix, trace["reasoning_ids"], layout, mask_batch)
             for row in scored:
                 row.update({"trace_id": trace["trace_id"], "stage": stage})
-            append_jsonl(rows_path, scored)
+            # Persist locally per batch, but commit the remote Volume once per
+            # cardinality. This bounds resume loss to one k while avoiding
+            # hundreds of multi-second commits per trace on billed GPU time.
+            append_jsonl(rows_path, scored, commit=False)
             seen.update(mask_batch)
+        if missing:
             budget.flush(f"{stage}_{trace['trace_id']}_k{k}")
 
     control_path = trace_dir / "control.json"

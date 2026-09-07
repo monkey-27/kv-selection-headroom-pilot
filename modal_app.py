@@ -40,7 +40,9 @@ image = (
         "HF_HUB_CACHE": "/cache/huggingface/hub",
         "MPLCONFIGDIR": "/tmp/matplotlib",
         "KVH_MODAL_VOLUME_NAME": OUTPUT_VOLUME_NAME,
-        "PYTHONPATH": "/root",
+        # Random Attention's copied VaSE parser contains ``from Utils import``
+        # and therefore also needs its harness directory as an import root.
+        "PYTHONPATH": "/root:/root/kvcompress/harness",
     })
     .add_local_python_source("kvheadroom", "kvcompress")
     .add_local_file("configs/kv_headroom.json", "/root/configs/kv_headroom.json")

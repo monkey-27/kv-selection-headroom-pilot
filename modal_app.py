@@ -17,7 +17,7 @@ CACHE_VOLUME_NAME = "kv-selection-headroom-hf-cache"
 app = modal.App(APP_NAME)
 output_volume = modal.Volume.from_name(OUTPUT_VOLUME_NAME, create_if_missing=True)
 cache_volume = modal.Volume.from_name(CACHE_VOLUME_NAME, create_if_missing=True)
-hf_secret = modal.Secret.from_name("huggingface-secret")
+hf_secret = modal.Secret.from_name("huggingface-token")
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
@@ -101,6 +101,9 @@ def _remote_config(gpu: str) -> str:
     # One physical GPU-hour is conservatively charged as one H100-equivalent
     # hour even if the selected device is an A100.
     source["runtime"]["gpu_h100_equivalent_factor"] = 1.0
+    # Reserve at least 0.75 H100-hours for the matched probes, cold starts,
+    # model reloads, data preparation, and final artifact synchronization.
+    source["runtime"]["max_h100_equivalent_hours"] = 9.25
     source["runtime"]["selected_gpu"] = gpu
     path = Path(f"/tmp/kv_headroom_{gpu.lower()}.json")
     path.write_text(json.dumps(source, indent=2) + "\n")
@@ -170,11 +173,11 @@ def benchmark_h100():
     return _benchmark("H100")
 
 
-@app.function(gpu="A100-40GB", timeout=36000, **common)
+@app.function(gpu="A100-40GB", timeout=33000, **common)
 def run_full_a100():
     return _run_full("A100-40GB")
 
 
-@app.function(gpu="H100", timeout=36000, **common)
+@app.function(gpu="H100", timeout=33000, **common)
 def run_full_h100():
     return _run_full("H100")

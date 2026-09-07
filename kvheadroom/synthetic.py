@@ -49,11 +49,16 @@ def build_examples(tokenizer, n_examples: int = 16) -> list[dict]:
         query_text = f" Query: What exact value was assigned to register {register}? Answer: {value}."
         target = _fit(tokenizer, query_text, 64, filler=f" The answer remains {value}.")
         reasoning = [tok for block in blocks for tok in block] + recent + target
-        value_ids = tokenizer.encode(value, add_special_tokens=False)
         context = reasoning[:896]
-        occurrences = sum(context[j:j + len(value_ids)] == value_ids for j in range(len(context) - len(value_ids) + 1))
+        # SentencePiece/BPE tokenization can encode a word differently at a
+        # whitespace boundary (for example, ``cobalt`` versus `` cobalt``).
+        # Validate the protocol at the decoded-text level: the assigned value
+        # must occur exactly once in the pre-query context and in one block.
+        decoded_blocks = [tokenizer.decode(block_ids, skip_special_tokens=True) for block_ids in blocks]
+        occurrences = sum(decoded.count(value) for decoded in decoded_blocks)
+        occurrences += tokenizer.decode(recent, skip_special_tokens=True).count(value)
         if occurrences != 1:
-            raise RuntimeError(f"synthetic {i}: value token sequence occurs {occurrences} times before target")
+            raise RuntimeError(f"synthetic {i}: value occurs {occurrences} times before target")
         query_ids = tokenizer.encode(
             f" Query: What exact value was assigned to register {register}? Answer:",
             add_special_tokens=False,

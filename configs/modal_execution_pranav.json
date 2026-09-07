@@ -1,0 +1,36 @@
+{
+  "workspace": "pranav-gupta-4-1-07",
+  "profile": "pranav-gupta-4-1-07",
+  "selected_gpu": "H100",
+  "selection_rule": "minimum estimated dollar cost from matched score_masks throughput",
+  "pricing_usd_per_second": {
+    "a100_80gb": 0.000694,
+    "h100": 0.001097
+  },
+  "probes": {
+    "a100": {
+      "modal_app_id": "ap-X59o49KAzWLP4fcPs0FoV9",
+      "requested": "A100-40GB",
+      "actual": "NVIDIA A100-SXM4-80GB",
+      "load_seconds": 65.509894053,
+      "subsets": 96,
+      "score_seconds": 0.6443380120000057,
+      "subsets_per_second": 148.99012352541317,
+      "peak_allocated_gib": 13.223395824432373
+    },
+    "h100": {
+      "modal_app_id": "ap-FuFkdEnZb7xA6TtmN7rk4R",
+      "actual": "NVIDIA H100 80GB HBM3",
+      "load_seconds": 39.602030159,
+      "subsets": 96,
+      "score_seconds": 0.3945873629999994,
+      "subsets_per_second": 243.2921299610909,
+      "peak_allocated_gib": 13.247077465057373
+    }
+  },
+  "h100_speedup": 1.633,
+  "h100_break_even_speedup": 1.581,
+  "full_run_ledger_cap_h100_equivalent_hours": 9.25,
+  "full_run_timeout_seconds": 33000,
+  "note": "The reduced full-run cap reserves budget for both probes and unmetered startup/reload/sync overhead under the 10 H100-equivalent GPU-hour hard cap."
+}

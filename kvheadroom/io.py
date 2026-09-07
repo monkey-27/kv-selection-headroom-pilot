@@ -25,7 +25,9 @@ def read_jsonl(path: str | Path) -> list[dict]:
     path = Path(path)
     if not path.exists():
         return []
-    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    # JSONL records are delimited by LF, not every Unicode character Python's
+    # splitlines() recognizes. GPQA contains U+2028 inside a valid JSON string.
+    return [json.loads(line) for line in path.read_text().split("\n") if line.strip()]
 
 
 def append_jsonl(path: str | Path, rows: Iterable[dict]) -> None:

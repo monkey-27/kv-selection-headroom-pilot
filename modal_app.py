@@ -153,12 +153,23 @@ def validate_remote():
     from kvcompress.harness.Utils.grader import check_is_correct
     from kvcompress.harness.Utils.parser import parse_question
     from kvheadroom.synthetic import build_examples
+    from kvheadroom.io import read_jsonl
 
     del check_is_correct, parse_question
     cfg = json.loads(Path("/root/configs/kv_headroom.json").read_text())
     tokenizer = AutoTokenizer.from_pretrained(cfg["model"], revision=cfg["model_revision"])
     examples = build_examples(tokenizer, cfg["synthetic"]["n_examples"])
-    return {"upstream_imports": True, "synthetic_examples": len(examples)}
+    _prepare_data()
+    math_rows = read_jsonl("/outputs/data/math/test.jsonl")
+    gpqa_rows = read_jsonl("/outputs/data/gpqa/test.jsonl")
+    if len(math_rows) != 500 or len(gpqa_rows) != 198:
+        raise RuntimeError(f"dataset row mismatch: math={len(math_rows)}, gpqa={len(gpqa_rows)}")
+    return {
+        "upstream_imports": True,
+        "synthetic_examples": len(examples),
+        "math_rows": len(math_rows),
+        "gpqa_rows": len(gpqa_rows),
+    }
 
 
 def _run_full(gpu: str) -> dict:

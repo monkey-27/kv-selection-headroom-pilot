@@ -112,24 +112,35 @@ def run(config_path: str) -> dict:
                     raise RuntimeError(f"short deterministic trajectory for {trace['trace_id']}")
                 original = list(trace["reasoning_ids"][896:896 + max_needed])
                 extension = None
-                if len(original) < max_needed:
-                    if trace["dataset"] != "synthetic":
-                        raise RuntimeError(f"short original trajectory for {trace['trace_id']}")
-                    base = list(trace["reasoning_ids"][896:])
-                    original = (base * ((max_needed + len(base) - 1) // len(base)))[:max_needed]
-                    extension = "cycled predeclared query-answer target"
+                synthetic_full = None
+                if trace["dataset"] == "synthetic":
+                    synthetic_full = scorer.generate_from_mask(
+                        prefix, trace["reasoning_ids"], layout, (1 << 12) - 1, max(cfg["depths"]),
+                        temperature=0.0, top_p=1.0, seed=_stable_seed(cfg["seed"], trace["trace_id"]),
+                        stop_at_eos=False)
+                    original = list(trace["reasoning_ids"][896:896 + cfg["target_tokens"]])
+                    extension = "matched free prefixes followed by common predeclared query target"
+                elif len(original) < max_needed:
+                    raise RuntimeError(f"short original trajectory for {trace['trace_id']}")
                 trajectory = {
                     "trace_id": trace["trace_id"], "dataset": trace["dataset"],
                     "intervention_mask": intervention_mask, "adapted_ids": adapted,
                     "original_ids": original, "synthetic_original_extension": extension,
+                    "synthetic_full_prefix_ids": synthetic_full,
                     "adapted_text": scorer.tokenizer.decode(adapted, skip_special_tokens=True),
                     "original_text": scorer.tokenizer.decode(original, skip_special_tokens=True),
                     "needed_value": trace.get("needed_value"),
                     "depth_text": {str(d): {
                         "adapted_prefix": scorer.tokenizer.decode(adapted[:d], skip_special_tokens=True),
-                        "adapted_target": scorer.tokenizer.decode(adapted[d:d + cfg["target_tokens"]], skip_special_tokens=True),
-                        "original_prefix": scorer.tokenizer.decode(original[:d], skip_special_tokens=True),
-                        "original_target": scorer.tokenizer.decode(original[d:d + cfg["target_tokens"]], skip_special_tokens=True),
+                        "adapted_target": scorer.tokenizer.decode(
+                            (original if trace["dataset"] == "synthetic" else adapted[d:d + cfg["target_tokens"]]),
+                            skip_special_tokens=True),
+                        "original_prefix": scorer.tokenizer.decode(
+                            synthetic_full[:d] if trace["dataset"] == "synthetic" else original[:d],
+                            skip_special_tokens=True),
+                        "original_target": scorer.tokenizer.decode(
+                            original if trace["dataset"] == "synthetic" else original[d:d + cfg["target_tokens"]],
+                            skip_special_tokens=True),
                     } for d in cfg["depths"]},
                     "deleted_block_text": [
                         scorer.tokenizer.decode(trace["reasoning_ids"][64 * b:64 * (b + 1)], skip_special_tokens=True)
@@ -144,7 +155,12 @@ def run(config_path: str) -> dict:
                     if path.exists():
                         continue
                     budget.check()
-                    rows = _score_landscape(scorer, prefix, trace, layout, continuation, d,
+                    scored_continuation = continuation
+                    if trace["dataset"] == "synthetic":
+                        free_prefix = (trajectory["adapted_ids"] if condition == "adapted"
+                                       else trajectory["synthetic_full_prefix_ids"])
+                        scored_continuation = free_prefix[:d] + trajectory["original_ids"]
+                    rows = _score_landscape(scorer, prefix, trace, layout, scored_continuation, d,
                                             k2_masks, cfg["subset_batch_size"])
                     atomic_json(path, {"trace_id": trace["trace_id"], "dataset": trace["dataset"],
                                        "condition": condition, "d": d, "rows": rows,
@@ -209,7 +225,8 @@ def analyze(config_path: str) -> dict:
                                 "matched_original_minus_adapted_at_128": matched_gap}
     verdict = "INCOMPLETE"
     if aggregate["complete"]:
-        if syn_decay > gates["synthetic_max_collapse_h2"]:
+        if (med("synthetic", "adapted", d0) < gates["synthetic_min_adapted_h2"]
+                or syn_decay > gates["synthetic_max_collapse_h2"]):
             verdict = "CONFOUNDED: SYNTHETIC COLLAPSE"
         elif (nat_decay >= gates["substantial_decay_h2"] and med("natural", "adapted", d1) <= gates["adapted_near_zero_h2"]
               and matched_gap >= gates["matched_original_gap_h2"]):

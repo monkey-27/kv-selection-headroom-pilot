@@ -1,12 +1,13 @@
 {
-  "protocol_version": "kv-headroom-adaptation-mechanism-v1",
+  "protocol_version": "kv-headroom-adaptation-mechanism-v2",
+  "assay_revision": "synthetic arms use matched free prefixes followed by the same predeclared passcode-query target",
   "seed": 20260908,
   "model": "Qwen/Qwen3-4B",
   "model_revision": "main",
   "dtype": "bfloat16",
   "attention_backend": "sdpa",
   "source_run_dir": "runs/kv_headroom_v1",
-  "run_dir": "runs/kv_headroom_mechanism_v1",
+  "run_dir": "runs/kv_headroom_mechanism_v2",
   "n_natural": 16,
   "n_synthetic": 12,
   "k": 2,
@@ -19,7 +20,8 @@
     "adapted_near_zero_h2": 0.03,
     "substantial_decay_h2": 0.05,
     "matched_original_gap_h2": 0.05,
-    "synthetic_max_collapse_h2": 0.03
+    "synthetic_max_collapse_h2": 0.03,
+    "synthetic_min_adapted_h2": 0.08
   },
   "runtime": {
     "max_h100_equivalent_hours": 5.0,

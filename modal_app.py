@@ -116,7 +116,7 @@ def _remote_config(gpu: str) -> str:
 def _remote_mechanism_config() -> str:
     source = json.loads(Path("/root/configs/mechanism_adaptation.json").read_text())
     source["source_run_dir"] = "/outputs/kv_headroom_v1"
-    source["run_dir"] = "/outputs/kv_headroom_mechanism_v1"
+    source["run_dir"] = "/outputs/kv_headroom_mechanism_v2"
     path = Path("/tmp/kv_headroom_mechanism.json")
     path.write_text(json.dumps(source, indent=2) + "\n")
     return str(path)
@@ -242,6 +242,8 @@ def smoke_adaptation_mechanism_h100():
     continuation = scorer.generate_from_mask(prefix, trace["reasoning_ids"], layout, 3, 80,
                                              temperature=0.0, top_p=1.0, seed=cfg["seed"],
                                              stop_at_eos=False)
+    query_target = trace["reasoning_ids"][896:960]
+    includes_needed = (1 << trace["needed_block"]) | 1
     rows = scorer.score_continuation_masks(prefix, trace["reasoning_ids"], layout,
-                                            [3, 5], continuation, 16)
+                                            [3, includes_needed], continuation[:16] + query_target, 16)
     return {"generated_tokens": len(continuation), "rows": rows}

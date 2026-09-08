@@ -1,0 +1,29 @@
+{
+  "protocol_version": "kv-headroom-adaptation-mechanism-v1",
+  "seed": 20260908,
+  "model": "Qwen/Qwen3-4B",
+  "model_revision": "main",
+  "dtype": "bfloat16",
+  "attention_backend": "sdpa",
+  "source_run_dir": "runs/kv_headroom_v1",
+  "run_dir": "runs/kv_headroom_mechanism_v1",
+  "n_natural": 16,
+  "n_synthetic": 12,
+  "k": 2,
+  "depths": [16, 32, 64, 128],
+  "target_tokens": 64,
+  "subset_batch_size": 32,
+  "bootstrap_samples": 10000,
+  "near_monotonic_tolerance_nats": 0.02,
+  "gates": {
+    "adapted_near_zero_h2": 0.03,
+    "substantial_decay_h2": 0.05,
+    "matched_original_gap_h2": 0.05,
+    "synthetic_max_collapse_h2": 0.03
+  },
+  "runtime": {
+    "max_h100_equivalent_hours": 5.0,
+    "stop_margin_hours": 0.25,
+    "gpu_h100_equivalent_factor": 1.0
+  }
+}

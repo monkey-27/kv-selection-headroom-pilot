@@ -197,6 +197,63 @@ class QwenReplayScorer:
         return {"utility": utility, "nll": -utility}
 
     @torch.inference_mode()
+    def score_continuation_masks(
+        self,
+        prefix_cache,
+        reasoning_ids: Sequence[int],
+        layout: ReplayLayout,
+        masks: Sequence[int],
+        continuation_ids: Sequence[int],
+        adapted_prefix_tokens: int,
+    ) -> list[dict]:
+        """Score the 64 tokens after a frozen post-checkpoint continuation.
+
+        The old cache slots keep their original RoPE indices. The checkpoint
+        query token and frozen continuation use their original absolute
+        positions, independent of the physically compacted cache length.
+        """
+        d = int(adapted_prefix_tokens)
+        needed = d + layout.target_tokens
+        if len(continuation_ids) < needed:
+            raise ValueError(f"continuation needs {needed} tokens, found {len(continuation_ids)}")
+        keeps = [layout.keep_indices(mask) for mask in masks]
+        lengths = {len(x) for x in keeps}
+        if len(lengths) != 1:
+            raise ValueError("batching across cardinalities is forbidden: gathered cache lengths differ")
+        index_matrix = torch.tensor(keeps, dtype=torch.long, device=self.device)
+        cache = _filled_cache(prefix_cache, index_matrix)
+        batch, past = index_matrix.shape
+
+        # Logit d predicts continuation[d]. Include only the preceding target
+        # tokens as inputs, exactly as causal teacher forcing requires.
+        tokens = [int(reasoning_ids[layout.checkpoint - 1])]
+        tokens.extend(int(x) for x in continuation_ids[:needed - 1])
+        query = torch.tensor(tokens, dtype=torch.long, device=self.device)[None].expand(batch, -1)
+        labels = torch.tensor(continuation_ids[d:needed], dtype=torch.long, device=self.device)
+        labels = labels[None].expand(batch, -1)
+        start = layout.prompt_tokens + layout.checkpoint - 1
+        positions = torch.arange(start, start + query.shape[1], device=self.device)
+        mask = _bottom_right_causal_mask(batch, query.shape[1], past,
+                                         next(self.model.parameters()).dtype, self.device)
+        output = self.model(
+            input_ids=query,
+            attention_mask={"full_attention": mask},
+            position_ids=positions[None].expand(batch, -1),
+            cache_position=positions,
+            past_key_values=cache,
+            use_cache=True,
+            logits_to_keep=query.shape[1],
+        )
+        logits = output.logits[:, d:d + layout.target_tokens].float()
+        logp = F.log_softmax(logits, dim=-1)
+        token_logp = logp.gather(-1, labels[..., None]).squeeze(-1)
+        return [{
+            "mask": int(subset), "k": int(subset).bit_count(),
+            "utility": float(token_logp[i].mean().item()),
+            "nll": float(-token_logp[i].mean().item()),
+        } for i, subset in enumerate(masks)]
+
+    @torch.inference_mode()
     def future_attention_mass(self, prefix_cache, reasoning_ids: Sequence[int], layout: ReplayLayout):
         """Mean full-cache attention mass over layers, query heads, and 64 future queries."""
         import transformers.models.qwen3.modeling_qwen3 as qwen3
@@ -248,7 +305,7 @@ class QwenReplayScorer:
     @torch.inference_mode()
     def generate_from_mask(self, prefix_cache, reasoning_ids: Sequence[int], layout: ReplayLayout,
                            subset_mask: int, max_new_tokens: int, temperature: float, top_p: float,
-                           seed: int) -> list[int]:
+                           seed: int, stop_at_eos: bool = True) -> list[int]:
         keep = layout.keep_indices(subset_mask)
         cache = _filled_cache(prefix_cache, torch.tensor([keep], device=self.device))
         current = torch.tensor([[reasoning_ids[layout.checkpoint - 1]]], device=self.device)
@@ -276,7 +333,7 @@ class QwenReplayScorer:
                 remove = torch.cumsum(sorted_p, -1) - sorted_p > top_p
                 sorted_p[remove] = 0
                 token = int(sorted_i[torch.multinomial(sorted_p, 1, generator=generator)])
-            if token == eos:
+            if token == eos and stop_at_eos:
                 break
             generated.append(token)
             current = torch.tensor([[token]], device=self.device)

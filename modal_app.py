@@ -46,6 +46,7 @@ image = (
     })
     .add_local_python_source("kvheadroom", "kvcompress")
     .add_local_file("configs/kv_headroom.json", "/root/configs/kv_headroom.json")
+    .add_local_file("configs/mechanism_adaptation.json", "/root/configs/mechanism_adaptation.json")
 )
 
 common = dict(
@@ -108,6 +109,15 @@ def _remote_config(gpu: str) -> str:
     source["runtime"]["max_h100_equivalent_hours"] = 9.25
     source["runtime"]["selected_gpu"] = gpu
     path = Path(f"/tmp/kv_headroom_{gpu.lower()}.json")
+    path.write_text(json.dumps(source, indent=2) + "\n")
+    return str(path)
+
+
+def _remote_mechanism_config() -> str:
+    source = json.loads(Path("/root/configs/mechanism_adaptation.json").read_text())
+    source["source_run_dir"] = "/outputs/kv_headroom_v1"
+    source["run_dir"] = "/outputs/kv_headroom_mechanism_v1"
+    path = Path("/tmp/kv_headroom_mechanism.json")
     path.write_text(json.dumps(source, indent=2) + "\n")
     return str(path)
 
@@ -209,3 +219,29 @@ def run_full_a100():
 @app.function(gpu="H100", timeout=33000, **common)
 def run_full_h100():
     return _run_full("H100")
+
+
+@app.function(gpu="H100", timeout=18000, **common)
+def run_adaptation_mechanism_h100():
+    from kvheadroom.mechanism import run
+    result = run(_remote_mechanism_config())
+    output_volume.commit(); cache_volume.commit()
+    return result
+
+
+@app.function(gpu="H100", timeout=1800, **common)
+def smoke_adaptation_mechanism_h100():
+    from kvheadroom.replay import QwenReplayScorer, ReplayLayout
+    from kvheadroom.synthetic import build_examples
+
+    cfg = json.loads(Path("/root/configs/mechanism_adaptation.json").read_text())
+    scorer = QwenReplayScorer.load(cfg["model"], cfg["dtype"], cfg["attention_backend"], cfg["model_revision"])
+    trace = build_examples(scorer.tokenizer, 1)[0]
+    layout = ReplayLayout.main(len(trace["prompt_ids"]))
+    prefix = scorer.prefill(trace["prompt_ids"], trace["reasoning_ids"], layout)
+    continuation = scorer.generate_from_mask(prefix, trace["reasoning_ids"], layout, 3, 80,
+                                             temperature=0.0, top_p=1.0, seed=cfg["seed"],
+                                             stop_at_eos=False)
+    rows = scorer.score_continuation_masks(prefix, trace["reasoning_ids"], layout,
+                                            [3, 5], continuation, 16)
+    return {"generated_tokens": len(continuation), "rows": rows}

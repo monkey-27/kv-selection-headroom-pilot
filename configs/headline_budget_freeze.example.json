@@ -1,0 +1,8 @@
+{
+  "schema": "headline-budget-freeze-v1",
+  "status": "UNFROZEN_EXAMPLE_ONLY",
+  "selection_uses": "FullKV generated lengths only",
+  "target_ratio": 0.25,
+  "cells": {}
+}
+

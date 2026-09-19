@@ -1,0 +1,41 @@
+{
+  "schema": "pd-vs-tri-headline-v1",
+  "models": [
+    "Qwen/Qwen3-4B",
+    "Qwen/Qwen3-14B",
+    "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+    "microsoft/Phi-4-reasoning-plus"
+  ],
+  "domains": ["math", "constraint", "science", "code"],
+  "methods": ["pagedrop16", "triattention"],
+  "page_tokens": 16,
+  "recent_tokens": 64,
+  "prompt_protected": true,
+  "pagedrop_eviction_cadence": 64,
+  "pagedrop_seeds": [20260915],
+  "pagedrop_seed_rule": "frozen pilot: seed + sha256(prompt_ids) first32bits + layer_idx",
+  "triattention_seed": 0,
+  "item_order_seed": 0,
+  "shards_per_cell": 4,
+  "max_total_tokens": 32768,
+  "deterministic_decoding": true,
+  "nominal_generated_kv_compression": 4.0,
+  "bootstrap": {"replicates": 10000, "seed": 0, "unit": "problem"},
+  "noninferiority_margin_pp": -3.0,
+  "progress": {"paired_increment": 25, "max_interval_seconds": 600},
+  "official_triattention": {
+    "repository": "https://github.com/WeianMao/triattention.git",
+    "sha": "325297218a0d85cc83bc9ca1ecfa1a33a178831f",
+    "fallback_backend": "triattention_official_vllm"
+  },
+  "tensorrt_llm": {
+    "repository": "https://github.com/NVIDIA/TensorRT-LLM.git",
+    "sha": "8a26dd8f9d6fd09781d7e6f5f1162674f9f8fd05",
+    "backend": "pytorch",
+    "use_kv_cache_manager_v2": true,
+    "supported_compute_capabilities": [[10, 0], [10, 3]]
+  },
+  "triattention": {"beta": 64, "eviction_mode": "union", "prefix_caching": false},
+  "model_revisions_file": "configs/model_revisions.lock.json",
+  "budget_freeze_file": "configs/headline_budget_freeze.json"
+}

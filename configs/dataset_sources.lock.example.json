@@ -1,0 +1,12 @@
+{
+  "schema": "dataset-sources-lock-v1",
+  "status": "RESOLVE_AND_FREEZE_BEFORE_MANIFEST_BUILD",
+  "sources": {
+    "aime_2026": {"canonical_authority": "Mathematical Association of America", "revision": null, "expected_n": 30},
+    "hmmt_feb_2026": {"canonical_url": "https://www.hmmt.co/www/archive/292", "revision": null, "expected_n": 33},
+    "amo_bench": {"repository": "https://github.com/meituan-longcat/AMO-Bench.git", "revision": null, "expected_n": 50},
+    "constraintbench": {"canonical_source": null, "revision": null, "expected_n": 200},
+    "frontierscience_olympiad": {"canonical_source": null, "revision": null, "expected_n": 100},
+    "livecodebench_pro": {"canonical_source": null, "revision": null, "strict_original_publication_cutoff": "2025-04-30", "max_n": 200}
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "status": "RUNNING",
+  "profile": "axiomatize-founders",
+  "app_id": "ap-H32ZBZXc7kbX7xABImnFDg",
+  "charged_hours_snapshot": 0.18650528198666666,
+  "gpu_validation": "passed; max attention absolute error 0.00390625 for all 3 policies",
+  "math_completed_snapshot": 0,
+  "math_total": 1500,
+  "scientific_verdict": null
+}
